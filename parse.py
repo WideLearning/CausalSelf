@@ -18,11 +18,13 @@ def read_data(filename: str) -> pd.DataFrame:
 
 
 def add_lags(data: pd.DataFrame, max_lag: int) -> pd.DataFrame:
-    data = data.drop(columns="Date")
+    data = data.drop(columns="Date", errors="ignore")
     dataframes = []
     for i in range(max_lag + 1):
-        shifted = data.shift(-i)[:-max_lag]
-        shifted.columns = pd.Index([f"{name.replace(' ', '_')}-{i}" for name in shifted.columns])
+        shifted = data.shift(-i)[: len(data) - max_lag]
+        shifted.columns = pd.Index(
+            [f"{name.replace(' ', '_')}-{i}" for name in shifted.columns]
+        )
         dataframes.append(shifted)
     return pd.concat(dataframes, axis=1)
 
