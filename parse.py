@@ -8,17 +8,16 @@ def read_data(filename: str) -> pd.DataFrame:
             lambda text: float("".join(filter(str.isdigit, text))) / 1000,
             variables[1::2],
         )
-        return [date] + list(variables)
+        return list(variables)
 
     with open(filename, encoding="utf-8") as data:
         header, *lines = data.readlines()
-        columns = header.split(",")[:-1]
+        columns = header.split(",")[1:-1]
         rows = list(map(parse, lines))
         return pd.DataFrame(rows, columns=columns)
 
 
 def add_lags(data: pd.DataFrame, max_lag: int) -> pd.DataFrame:
-    data = data.drop(columns="Date", errors="ignore")
     dataframes = []
     for i in range(max_lag + 1):
         shifted = data.shift(-i)[: len(data) - max_lag]
@@ -29,8 +28,11 @@ def add_lags(data: pd.DataFrame, max_lag: int) -> pd.DataFrame:
     return pd.concat(dataframes, axis=1)
 
 
-data = read_data("raw_data.csv")[:-37]  # to remove missing Stoicism values
-print(data.describe())
+data = read_data("raw_data.csv")
+for column in data.columns:
+    missing = data[column] < 0.1
+    print(f"{column}: {missing.sum()} missing numbers")
+    data.loc[missing, column] = data[column].median() if column == "Stoicism" else 0
 print(data.shape)
 data = add_lags(data, 2)
 print(data.shape)
